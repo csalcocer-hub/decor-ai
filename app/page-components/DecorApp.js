@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 
-const OPENAI_URL = "https://api.openai.com/v1/images/generations";
+const OPENAI_EDIT_URL = "https://api.openai.com/v1/images/edits";
 
 const STYLES = {
   elegant: { label: "Elegant", icon: "🪞", headerBg: "linear-gradient(135deg,#1C1C2E,#2C2C4E)", textColor: "#d0d0ff" },
@@ -189,8 +189,8 @@ function RoomCard({ room, onAnalyze, onTabSwitch, onSelectStyle }) {
               <p style={{ color:"#6B6760", fontSize:"0.83rem" }}>{loadingMsg}</p>
               <div style={{ display:"flex", flexDirection:"column", gap:"0.4rem", width:"100%", marginTop:"0.2rem" }}>
                 <StepRow label="Claude analyses your room"       state={steps.analyse} />
-                <StepRow label="DALL-E 3 renders Elegant design" state={steps.elegant} />
-                <StepRow label="DALL-E 3 renders Casual design"  state={steps.casual}  />
+                <StepRow label="GPT-Image-1 redesigns your room (Elegant)" state={steps.elegant} />
+                <StepRow label="GPT-Image-1 redesigns your room (Casual)"  state={steps.casual}  />
               </div>
             </div>
           )}
@@ -306,14 +306,14 @@ export default function DecorApp() {
 
       patch(id, {
         analysis: parsed,
-        loadingMsg: "DALL-E 3 is painting your rooms…",
+        loadingMsg: "GPT-Image-1 is redesigning your room…",
         steps: { analyse:"done", elegant:"active", casual:"active" },
         imageLoading: { elegant:true, casual:true },
       });
 
       await Promise.all([
-        genImage(id, "elegant", buildImagePrompt(parsed.roomType, "elegant", parsed.elegant), openaiKey, patchDeep),
-        genImage(id, "casual",  buildImagePrompt(parsed.roomType, "casual",  parsed.casual),  openaiKey, patchDeep),
+        genImage(id, "elegant", buildImagePrompt(parsed.roomType, "elegant", parsed.elegant), openaiKey, patchDeep, room.base64),
+        genImage(id, "casual",  buildImagePrompt(parsed.roomType, "casual",  parsed.casual),  openaiKey, patchDeep, room.base64),
       ]);
 
       patch(id, { status:"done", loadingMsg:"", steps:{ analyse:"done", elegant:"done", casual:"done" }});
@@ -408,16 +408,37 @@ export default function DecorApp() {
   );
 }
 
-async function genImage(roomId, style, prompt, apiKey, patchDeep) {
+async function genImage(roomId, style, prompt, apiKey, patchDeep, base64) {
   try {
-    const res = await fetch(OPENAI_URL, {
+    // Convert base64 to a Blob/File for the multipart request
+    const byteChars = atob(base64);
+    const byteNums  = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNums);
+    const imageBlob = new Blob([byteArray], { type: "image/jpeg" });
+    const imageFile = new File([imageBlob], "room.jpg", { type: "image/jpeg" });
+
+    // GPT-Image-1 edits use multipart/form-data
+    const formData = new FormData();
+    formData.append("model", "gpt-image-1");
+    formData.append("image[]", imageFile);
+    formData.append("prompt", prompt);
+    formData.append("n", "1");
+    formData.append("size", "1024x1024");
+    formData.append("quality", "medium");
+
+    const res = await fetch(OPENAI_EDIT_URL, {
       method: "POST",
-      headers: { "Content-Type":"application/json", "Authorization":`Bearer ${apiKey}` },
-      body: JSON.stringify({ model:"dall-e-3", prompt, n:1, size:"1792x1024", quality:"standard" })
+      headers: { "Authorization": `Bearer ${apiKey}` },
+      body: formData
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    patchDeep(roomId, "images",       { [style]: data.data[0].url });
+
+    // GPT-Image-1 returns base64 by default
+    const imgData = data.data[0];
+    const url = imgData.url || `data:image/png;base64,${imgData.b64_json}`;
+    patchDeep(roomId, "images",       { [style]: url });
     patchDeep(roomId, "imageLoading", { [style]: false });
   } catch (err) {
     patchDeep(roomId, "imageLoading", { [style]: false });
