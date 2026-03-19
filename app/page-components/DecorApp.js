@@ -14,12 +14,26 @@ const EMOJI = {
   chair:"🪑", basket:"🧺", mirror:"🪞", cushion:"🧶", shelf:"📚", table:"🪵"
 };
 
+// Resize + compress image to max 1024px / JPEG 85% before sending to API
 function fileToBase64(file) {
   return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(",")[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1024;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      res(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = rej;
+    img.src = url;
   });
 }
 
@@ -258,7 +272,7 @@ export default function DecorApp() {
       const dataUrl = URL.createObjectURL(file);
       const id      = Date.now() + Math.random();
       setRooms(prev => [...prev, {
-        id, base64, mime: file.type, dataUrl,
+        id, base64, mime: 'image/jpeg', dataUrl,
         name: file.name.replace(/\.[^.]+$/, "") || "Room",
         status:"idle", errorMsg:"", loadingMsg:"",
         steps: { analyse:"idle", elegant:"idle", casual:"idle" },
