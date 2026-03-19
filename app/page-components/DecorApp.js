@@ -85,7 +85,7 @@ function StylePanel({ styleName, data, imageUrl, imageLoading, imageError, onSel
         {imageLoading && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"0.5rem" }}>
             <Spinner size={26} />
-            <span style={{ fontSize:"0.75rem", color:"#6B6760" }}>DALL-E 3 generating…</span>
+            <span style={{ fontSize:"0.75rem", color:"#6B6760" }}>GPT-Image-1 redesigning your room…</span>
           </div>
         )}
         {!imageLoading && imageError && (
@@ -343,7 +343,7 @@ export default function DecorApp() {
       {/* OpenAI Key Banner */}
       <div style={{ background:"#fff8e8", borderBottom:"2px solid #e8d5a3", padding:"0.85rem 2.5rem", display:"flex", alignItems:"center", gap:"1rem", flexWrap:"wrap" }}>
         <p style={{ fontSize:"0.82rem", color:"#6B6760", flex:1, minWidth:200, margin:0 }}>
-          <strong style={{ color:"#1C1C1E" }}>OpenAI API Key</strong> for DALL-E 3 images. Saved to your browser — enter once.
+          <strong style={{ color:"#1C1C1E" }}>OpenAI API Key</strong> for GPT-Image-1 images. Saved to your browser — enter once.
         </p>
         {!keySaved ? (
           <div style={{ display:"flex", gap:"0.5rem", flex:2, minWidth:240 }}>
@@ -375,7 +375,7 @@ export default function DecorApp() {
             Transform your rooms<br/>with <em style={{ color:"#C9A84C" }}>intelligent design</em>
           </h1>
           <p style={{ color:"#6B6760", fontSize:"0.92rem", marginBottom:"1.6rem" }}>
-            Upload a room photo → Claude analyses it → DALL-E 3 renders your redesign in two styles
+            Upload a room photo → Claude analyses it → GPT-Image-1 renders your redesign in two styles
           </p>
           <div
             onClick={() => fileRef.current.click()}
