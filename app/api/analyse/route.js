@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const { base64, mime } = await request.json();
@@ -63,7 +65,6 @@ export async function POST(request) {
 
     const raw = (data.content || []).map(b => b.text || "").join("");
 
-    // Extract JSON from response
     let cleaned = raw.replace(/```json|```/g, "").trim();
     const start = cleaned.indexOf("{");
     const end   = cleaned.lastIndexOf("}");
@@ -74,7 +75,7 @@ export async function POST(request) {
     return Response.json(parsed);
 
   } catch (err) {
-    console.error("Analyse error:", err);
+    console.error("Analyse error:", err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
